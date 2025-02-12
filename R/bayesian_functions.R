@@ -7,28 +7,28 @@ pp_stat_dens <- function(yrep, y, ynu1 = NULL, ynu2 = NULL, nbin = 4, stat1 = me
   }
   if(!is.colour(fill_limits) | length(fill_limits) != 2)
     stop("fill_cols must be a length-2 vector of colours")
-  
+
   # check y_col is a single colour in nature palette
-  ops <- c("background", "grey", "olive", "green", "teal", 
+  ops <- c("background", "grey", "olive", "green", "teal",
            "blue", "purple", "red", "orange", "yellow")
   if(!(y_col %in% ops) | length(y_col) != 1)
-    stop(paste("y_col must be one of", 
+    stop(paste("y_col must be one of",
                paste0(ops, collapse = ", ")
     ))
-  
+
   # set palette
   ramp_palette <- grDevices::colorRampPalette(fill_limits)
-  
+
   # calculate statistics
   yrep_enf <- enframe_descriptives(yrep, stat1 = stat1, stat2 = stat2)
   y_enf <- enframe_descriptives(y, stat1 = stat1, stat2 = stat2)
-  
+
   # plot values
-  graph <- 
+  graph <-
     ggplot2::ggplot(yrep_enf, ggplot2::aes(x = stat1, y = stat2)) +
     ggplot2::geom_density2d_filled(contour_var = "ndensity", bins = nbin,
                                    linewidth = 0, alpha = 1, adjust = 1) +
-    ggplot2::scale_fill_manual(values = c(ramp_palette(nbin)), 
+    ggplot2::scale_fill_manual(values = c(ramp_palette(nbin)),
                                name = "Prediction") +
     ggplot2::geom_segment(
       data = y_enf, ggplot2::aes(x = stat1, xend = stat1, y = -Inf,  yend = stat2),
@@ -55,4 +55,25 @@ pp_stat_dens <- function(yrep, y, ynu1 = NULL, ynu2 = NULL, nbin = 4, stat1 = me
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0))
   return(graph)
+}
+
+# extract decriptives from vector or matrix of observations
+enframe_descriptives <- function(y, stat1 = mean, stat2 = var) {
+  if(is.vector(y)) {
+    opv <- data.frame(s1 = stat1(y), s2 = stat2(y))
+    colnames(opv) <- c(as.character(substitute(stat1)), as.character(substitute(stat2)))
+    return(opv)
+  }
+  if(is.matrix(y)) {
+    I <- dim(y)[1]
+    s1 <- vector("numeric", I)
+    s2 <- vector("numeric", I)
+    for(i in 1:I) {
+      s1[i] <- stat1(y[i, ])
+      s2[i] <- stat2(y[i, ])
+    }
+    op <- data.frame(s1, s2)
+    colnames(op) <- c(as.character(substitute(stat1)), as.character(substitute(stat2)))
+    return(op)
+  }
 }
