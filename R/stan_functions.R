@@ -163,31 +163,31 @@ neuro_model <-
     # family is neuro family function
     # data is data.frame or tibble
     # formula is formula or list
-    if((!is.character(id) & !is.null(id)))
-      stop("id must be a column name of a factor in data")
+    # if((!is.character(id) & !is.null(id)))
+      # stop("id must be a column name of a factor in data")
 
-    if(!any(grepl(id, colnames(data))))
-      stop("id must be a column name of a factor in data")
+    # if(!any(grepl(id, colnames(data))))
+      # stop("id must be a column name of a factor in data")
 
-    if((!is.integer(seed) & !is.null(seed)))
-      stop("seed must be a positive integer")
+    # if((!is.integer(seed) & !is.null(seed)))
+      # stop("seed must be a positive integer")
 
-    if(is.integer(seed) & seed < 1)
-      stop("seed must be a positive integer")
+    # if(is.integer(seed) & seed < 1)
+      # stop("seed must be a positive integer")
 
-    if(!is.list(control))
-      stop("control must be a named list of sampler parameter values (see ?stan)")
+    # if(!is.list(control))
+      # stop("control must be a named list of sampler parameter values (see ?stan)")
 
-    if(!is.list(contrasts | any((names(contrasts) == "")) |
-                is.null(names(contrasts))))
-       stop("contrasts must be a named list indicating strings of contrast
-            functions to be used for columns of the data")
+    # if(!is.list(contrasts | any((names(contrasts) == "")) |
+                # is.null(names(contrasts))))
+       # stop("contrasts must be a named list indicating strings of contrast
+            # functions to be used for columns of the data")
 
-    if(!is.logical(standardize_coef) | length(standardize_coef) != 1)
-      stop("standardize_coef must be a logical of length 1")
+    # if(!is.logical(standardize_coef) | length(standardize_coef) != 1)
+      # stop("standardize_coef must be a logical of length 1")
 
-    if(!is.logical(stancode_only) | length(stancode_only) != 1)
-      stop("stancode_only must be a logical of length 1")
+   #  if(!is.logical(stancode_only) | length(stancode_only) != 1)
+      # stop("stancode_only must be a logical of length 1")
 
     # model matrices with specified contrasts ==================================
     # initialize named list of matrices
