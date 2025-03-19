@@ -65,7 +65,7 @@ plot_cor_mat <- function(rmat, pmat, sepvars = NULL, show_legend = T,
   
   # make plot
   ggplot2::ggplot(d, ggplot2::aes(x = var1, y = var2, fill = r)) +
-    ggplot2::geom_tile() +
+    ggplot2::geom_tile(colour = "white") +
     ggplot2::scale_fill_gradient2(
       name = "Pearson's r",
       low = fill_cols[1],

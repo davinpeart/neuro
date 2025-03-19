@@ -1,11 +1,11 @@
 Package: neuro
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Functions for Analyses in Behavioural Neuroscience
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Davin", "Peart",
+      email = "dpeart@uoguelph.ca",
       role = c("aut", "cre")
     )
   )
