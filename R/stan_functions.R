@@ -169,7 +169,7 @@ neuro_model <-
     if(!any(grepl(id, colnames(data))))
       stop("id must be a column name of a factor in data")
 
-    if((!is.interger(seed) & !is.null(seed)))
+    if((!is.integer(seed) & !is.null(seed)))
       stop("seed must be a positive integer")
 
     if(is.integer(seed) & seed < 1)
