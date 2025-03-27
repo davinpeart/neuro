@@ -28,6 +28,8 @@ negative_binomial <- function(predict_ancillary, repeated_measures, priors,
     int<lower=1> J;  // number of distributional parameters
 "
 }
+    if(!repeated_measures) {"
+"}
   )
 
   # parameters block
