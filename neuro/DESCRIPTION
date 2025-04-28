@@ -1,0 +1,16 @@
+Package: neuro
+Type: Package
+Title: Functions for Analyses in Behavioural Neuroscience
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Davin", "Peart",
+      email = "dpeart@uoguelph.ca",
+      role = c("aut", "cre")
+    )
+  )
+Description: More about what it does (maybe more than one line).
+    Continuation lines should be indented.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
