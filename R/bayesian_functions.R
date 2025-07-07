@@ -189,3 +189,126 @@ savage.dickey.bf <- function(posterior.samples, point.null = 0, plot = T,
     return(graph)
   }
 }
+
+# visualize posterior of the expected value
+ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot = "preds",
+                          wrap, points = F, hline = F, marginalize = F) {
+
+  # obtain posterior of the expected value
+  if(plot == "preds") {
+    epreds <- as.data.frame(t(brms::posterior_epred(brmsfit)))
+    colnames(epreds) <- gsub("V", "", colnames(epreds))
+  }
+
+  if(plot == "reps") {
+    epreds <- as.data.frame(t(brms::posterior_predict(brmsfit)))
+    colnames(epreds) <- gsub("V", "", colnames(epreds))
+  }
+
+  # integrate with information used from the observed data
+  epreds <- cbind(brmsfit$data, epreds)
+
+  # make tidy for summary and plotting
+  epreds <- tidyr::pivot_longer(
+    data = epreds,
+    cols = colnames(epreds)[!(colnames(epreds) %in% colnames(brmsfit$data))],
+    names_to = "Draw",
+    values_to = "epred")
+
+  # summarise plotting statistics
+  if(!missing(wrap)) {
+    epred_sum <- epreds %>%
+      dplyr::group_by({{x}}, {{wrap}})
+  }
+
+  if(missing(wrap) & marginalize) {
+    xname <- deparse(substitute(x))
+
+    epred_sum <- epreds %>%
+      dplyr::group_by({{x}}, Draw) %>%
+      dplyr::reframe(xname = unique({{x}}),
+                     epred = mean(epred)) %>%
+      dplyr::ungroup() %>%
+      group_by({{x}})
+  }
+
+  if(missing(wrap) & !marginalize) {
+    epred_sum <- epreds %>%
+      dplyr::group_by({{x}})
+  }
+
+  epred_sum <- epred_sum %>%
+    dplyr::summarize(pred = method(epred),
+                     back_lower = bayestestR::hdi(epred, ci = max(probs))[[2]],
+                     back_upper = bayestestR::hdi(epred, ci = max(probs))[[3]],
+                     front_lower = bayestestR::hdi(epred, ci = min(probs))[[2]],
+                     front_upper = bayestestR::hdi(epred, ci = min(probs))[[3]])
+
+  # plot
+  plot <-
+    ggplot2::ggplot(data = epred_sum, ggplot2::aes(x = {{x}})) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = back_lower, ymax = back_upper), fill = "#EEF5F9", colour = "#B9CCE0", linewidth = .4) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = front_lower, ymax = front_upper), fill = "#CCE1F2", colour = "#B8D0E8", linewidth = .4) +
+    ggplot2::geom_line(ggplot2::aes(y = pred), colour = "#618BC3", linewidth = .6) +
+    ggplot2::theme(axis.line = ggplot2::element_line(),
+                   axis.title = ggplot2::element_text(face = "bold"),
+                   axis.ticks.length = ggplot2::unit(1, "mm"),
+                   panel.background = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(),
+                   axis.text.y = ggplot2::element_text(),
+                   strip.text = ggplot2::element_blank()) +
+    ggplot2::labs(y = "Posterior") +
+    ggplot2::theme(panel.background = ggplot2::element_rect(fill = "white", colour = "black", linewidth = .5),
+                   strip.background = ggplot2::element_blank(),
+                   strip.text = ggplot2::element_text(size = 8, face = "bold"),
+                   text = ggplot2::element_text(colour = "black", family = "Helvetica"),
+                   plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = .5),
+                   axis.ticks = ggplot2::element_line(colour = "black", linewidth = .25),
+                   axis.ticks.length = ggplot2::unit(.75, "mm"),
+                   panel.grid = ggplot2::element_blank(),
+                   axis.line = ggplot2::element_blank(),
+                   axis.text = ggplot2::element_text(size = 8),
+                   axis.title = ggplot2::element_text(size = 9, face = "bold"))
+
+  # add wrap
+  if(!missing(wrap)) {
+    plot <- plot +
+      ggplot2::facet_wrap(vars({{wrap}}), scales = "free_y", nrow = 2, axes = "all_y")
+  }
+
+  # add hline at 0
+  if(hline) {
+    plot <-
+      plot +
+      ggplot2::geom_hline(yintercept = 0, colour = "grey30", linetype = "dotted")
+  }
+
+  # add mean line
+  if(points & marginalize) {
+    if(!missing(wrap)) {
+      plot <-
+        plot +
+        ggplot2::geom_point(data = brmsfit$data %>%
+                              dplyr::group_by({{x}}, {{wrap}}) %>%
+                              dplyr::summarize(y = mean({{y}})), aes(y = y),
+                            colour = neuro::nature_palette("blue")[6], linewidth = .6)
+    }
+    if(missing(wrap)) {
+      plot <-
+        plot +
+        ggplot2::geom_point(data = brmsfit$data %>%
+                              dplyr::group_by({{x}}, {{wrap}}) %>%
+                              dplyr::summarize(y = mean({{y}})), aes(y = y),
+                            colour = neuro::nature_palette("blue")[6], stroke = .6)
+    }
+  }
+
+  # add points
+  if(points & !marginalize) {
+    plot <- plot +
+      ggplot2::geom_point(data = brmsfit$data, mapping = ggplot2::aes(x = {{x}}, y = {{y}}),
+                          shape = 16, colour = neuro::nature_palette("blue")[6], fill = NA, alpha = 1, size = 1.3)
+  }
+
+  return(list(plot, epreds, epred_sum))
+}
