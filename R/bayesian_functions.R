@@ -120,34 +120,72 @@ enframe_prop_integer <- function(y) {
 }
 
 # calculate bayes factor using savage-dickey method
-savage.dickey.bf <- function(posterior.samples, point.null = 0, plot = T,
-                             prior.dist = "normal", prior.location = 0, prior.scale = 2) {
-  if(prior.dist == "normal") {
-    prior.fn <- function(q, mu = prior.location, sigma = prior.scale) {
-      dnorm(x = q, mean = mu, sd = sigma)
+savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
+                             colour_scheme = "blue") {
+
+  # function to parse terms from ...
+  extract_expression_terms <- function(string) {
+    terms <- strsplit(string, "[+-/*()]")[[1]]
+    for(i in 1:length(terms)) {
+      terms[i] <- paste0(str_extract_all(terms[i], "[^ ]")[[1]], collapse = "")
+    }
+    return(terms[terms != "" & !grepl(pattern = "exp|log", x = terms)])
+  }
+
+  # posterior
+  code = deparse(substitute(...))
+  terms <- unique(extract_expression_terms(string = code))
+  if(length(terms) == 1) {
+    posterior.code <- gsub(pattern = terms, x = code,
+                           replacement = paste0("as.data.frame(brmsfit$fit)$", terms))
+  } else {
+    posterior.code <- gsub(pattern = terms[1], x = code,
+                           replacement = paste0("as.data.frame(brmsfit$fit)$", terms[1]))
+    for(i in 2:length(terms)) {
+      posterior.code <- gsub(pattern = terms[i], x = posterior.code,
+                             replacement = paste0("as.data.frame(brmsfit$fit)$", terms[i]))
     }
   }
-  if(prior.dist == "cauchy") {
-    prior.fn <- function(q, mu = prior.loaction, gamma = prior.scale) {
-      dcauchy(x = q, location = mu, scale = gamma)
-    }
-  }
-  prior.density <- prior.fn(q = point.null)
+  posterior.samples <- eval(parse(text = posterior.code))
   posterior.spline <- polspline::logspline(posterior.samples)
   posterior.density <- polspline::dlogspline(point.null, posterior.spline)
+
+  # prior
+  prior.terms <- terms
+  for(i in 1:length(prior.terms)) {
+    if(paste0("prior_", prior.terms[i]) %in% names(brmsfit$fit)) {
+      prior.terms[i] <- paste0("prior_", prior.terms[i])
+    } else {
+      prior.terms[i] <- paste0("prior_", strsplit(prior.terms[i], "_")[[1]][1])
+    }
+  }
+  if(length(prior.terms) == 1) {
+    prior.code <- paste0("as.data.frame(brmsfit$fit)$", prior.terms)
+  } else {
+    prior.code <- gsub(pattern = terms[1], x = code,
+                       replacement = paste0("as.data.frame(brmsfit$fit)$", prior.terms[1]))
+    for(i in 2:length(prior.terms)) {
+      prior.code <- gsub(pattern = terms[i], x = prior.code,
+                         replacement = paste0("as.data.frame(brmsfit$fit)$", prior.terms[i]))
+    }
+  }
+  prior.samples <- eval(parse(text = prior.code))
+  prior.spline <- polspline::logspline(prior.samples)
+  prior.fn <- function(q, spline = prior.spline) {
+    polspline::dlogspline(q = q, fit = spline)
+  }
+  prior.density <- prior.fn(q = point.null)
+
+  # plot densities
   if(plot) {
-    if(point.null < posterior.spline$range[1] & point.null < posterior.spline$range[2]) {
-      interval <- seq(from = point.null, to = posterior.spline$range[2],
-                      by = (posterior.spline$range[2] - point.null)/1000)
+    colour_scheme <- strsplit(x = colour_scheme, split = "-")[[1]]
+    if(length(colour_scheme) == 1) {
+      colour_scheme[2] <- colour_scheme[1]
     }
-    if(point.null > posterior.spline$range[1] & point.null < posterior.spline$range[2]) {
-      interval <- seq(from = posterior.spline$range[1], to = posterior.spline$range[2],
-                      by = (posterior.spline$range[2] - posterior.spline$range[1])/1000)
-    }
-    if(point.null > posterior.spline$range[1] & point.null > posterior.spline$range[2]) {
-      interval <- seq(from = posterior.spline$range[1], to = point.null,
-                      by = (point.null - posterior.spline$range[1])/1000)
-    }
+    interval <- seq(from = min(point.null, posterior.spline$range[1], prior.spline$range[1]),
+                    to = max(point.null, posterior.spline$range[2], prior.spline$range[2]),
+                    by = (max(point.null, posterior.spline$range[2], prior.spline$range[2]) -
+                            min(point.null, posterior.spline$range[1], prior.spline$range[1])) / gamma)
     graph <-
       ggplot2::ggplot(data = rbind(data.frame(Distribution = rep("Prior", times = length(interval)),
                                               Theta = interval,
@@ -160,33 +198,42 @@ savage.dickey.bf <- function(posterior.samples, point.null = 0, plot = T,
       ggplot2::geom_vline(ggplot2::aes(xintercept = point.null), colour = "lightgrey") +
       ggplot2::geom_line() +
       ggplot2::geom_ribbon(ggplot2::aes(ymin = 0), linewidth = 0, alpha = .5) +
-      ggplot2::geom_point(data = rbind(data.frame(Distribution = "Prior", Theta = 0, Density = prior.density),
-                                       data.frame(Distribution = "Posterior", Theta = 0,
+      ggplot2::geom_point(data = rbind(data.frame(Distribution = "Prior", Theta = point.null, Density = prior.density),
+                                       data.frame(Distribution = "Posterior", Theta = point.null,
                                                   Density = posterior.density)),
                           size = 4, alpha = .5) +
-      ggplot2::scale_colour_manual(values = c(neuro::nature_palette("blue")[3], neuro::nature_palette("blue")[2])) +
-      ggplot2::scale_fill_manual(values = c(neuro::nature_palette("blue")[3], neuro::nature_palette("blue")[1])) +
+      ggplot2::scale_colour_manual(values = c(neuro::nature_palette(colour_scheme[1])[3],
+                                              neuro::nature_palette(colour_scheme[2])[2])) +
+      ggplot2::scale_fill_manual(values = c(neuro::nature_palette(colour_scheme[1])[3],
+                                            neuro::nature_palette(colour_scheme[2])[1])) +
       ggplot2::theme(panel.background = ggplot2::element_blank(),
                      panel.grid = ggplot2::element_blank(),
                      text = ggplot2::element_text(family = "Helvetica Neue"),
                      axis.line = ggplot2::element_line(colour = "black", linewidth = .2),
                      axis.ticks = ggplot2::element_line(colour = "black", linewidth = .2),
+                     axis.ticks.length = ggplot2::unit(1.75, "mm"),
                      axis.title = ggplot2::element_text(size = 11),
                      axis.text = ggplot2::element_text(size = 10),
                      legend.title = ggplot2::element_text(size = 11),
                      legend.text = ggplot2::element_text(size = 10)) +
       ggplot2::geom_text(data = data.frame(Theta = quantile(interval, .8),
-                                           Density = quantile(polspline::dlogspline(interval, posterior.spline), .85)),
+                                           Density = quantile(polspline::dlogspline(interval, posterior.spline), .95)),
                          inherit.aes = FALSE, mapping = ggplot2::aes(x = Theta, y = Density), size = 3.5,
-                         label = paste("BF[10] : ", round(prior.density / posterior.density, digits = 2), sep = ""),
+                         label = paste("BF[10] : ", signif(prior.density / posterior.density, digits = 3), sep = ""),
                          parse = TRUE, colour = "black") +
-      ggplot2::scale_x_continuous(expand = c(0, 0)) +
-      ggplot2::scale_y_continuous(expand = c(0, 0))
+      ggplot2::scale_x_continuous(expand = c(.04, .04)) +
+      ggplot2::scale_y_continuous(expand = c(.02, .02))
   }
+
+  # return BF01
   cat(paste0("Approximate BF (Savage-Dickey) in favour of null hypothesis Theta = ",
-             point.null, " : ", round(posterior.density/prior.density, digits = 10), "\n"))
+             point.null, " : ", signif(posterior.density/prior.density, digits = 3), "\n"))
+
+  # return plot
   if(plot) {
     return(graph)
+  } else {
+    return(posterior.density/prior.density)
   }
 }
 
@@ -311,4 +358,66 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
   }
 
   return(list(plot, epreds, epred_sum))
+}
+
+# plot posterior predictive distribution for negative binomial variables
+plot_posterior_pred <- function(data, col, fac, draws,
+                                pt.size = 3, pt.stroke = .2, pt.shape = 21,
+                                lwd.bar = .2, lwd.den = .8, adj = 1,
+                                xlab = NULL, xlim = NULL) {
+
+  # extract distributional parameters
+  mu1 <- draws[draws["Group"] == "E", ][["mu"]]
+  mu2 <- draws[draws["Group"] == "V", ][["mu"]]
+  pi1 <- draws[draws["Group"] == "E", ][["shape"]]
+  pi2 <- draws[draws["Group"] == "V", ][["shape"]]
+
+  # draw from posterior predictive distribution
+  preds <- data.frame(x = c(rnbinom(10000, mu = exp(mu1), size = exp(pi1)),
+                            rnbinom(10000, mu = exp(mu2), size = exp(pi2))))
+
+  # graph posterior predictions
+  p <-
+    ggplot(
+      enframe_prop_integer(preds$x),
+      aes(x = integer, y = prop)) +
+    geom_bar(stat = "identity", fill = "#98A9C0", colour = "#55587D", linewidth = lwd.bar) +
+    geom_density(inherit.aes = F, data = preds, aes(x = x), adjust = adj,
+                 colour = "#55587D", linewidth = lwd.den, bounds = c(0, Inf)) +
+    theme(panel.background = element_rect(fill = "#EBEEF2"),
+          axis.line = element_line(colour = "grey40"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.line.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.line.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(expand = c(0,0)) +
+    scale_x_continuous(limits = xlim) +
+    guides(x = "prism_offset", y = "prism_offset")
+
+  # plot distribution of sample data
+  s <-
+    ggplot(
+      data, aes(x = {{col}}, y = {{fac}})) +
+    geom_point(shape = pt.shape, size = pt.size, fill = "#98A9C0", colour = "#55587D",
+               stroke = pt.stroke, position = position_jitter(height= 0.01)) +
+    theme(text = element_text(colour = "grey20"),
+          panel.background = element_rect(fill = "#EBEEF2"),
+          axis.ticks = element_line(linewidth = .3),
+          axis.line = element_line(colour = "grey40", linewidth = .3),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.title.x = element_text(face = "bold")) +
+    labs(x = xlab) +
+    scale_y_discrete() +
+    scale_x_continuous(limits = xlim) +
+    guides(x = "prism_offset", y = "prism_offset")
+
+  p / s + plot_layout(axes = "collect", heights = c(1, .2))
 }
