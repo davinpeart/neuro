@@ -54,11 +54,11 @@ nature_palette <- function(colour = NULL, n = NULL) {
 
 # five dark colours
 colours5 <- function(colour = NULL) {
-  colours <- 
-    list(purple = "#5f83ea", 
-       green = "#68c7a3", 
-       blue = "#5bc3e8", 
-       yellow = "#f7ce67", 
+  colours <-
+    list(purple = "#5f83ea",
+       green = "#68c7a3",
+       blue = "#5bc3e8",
+       yellow = "#f7ce67",
        red = "#FA819E")
   if(!is.null(colour)) {
     if(!grepl(paste0(names(colours), collapse = "|"), colour)) {
@@ -91,5 +91,34 @@ theme_cell <- function(background = T, xticks = "up") {
     axis.title = ggplot2::element_text(face = "bold", size = rel(.9)),
     legend.title = ggplot2::element_text(face = "bold", size = rel(.9)))
 }
+
+# nature-inspired theme for ggplot2
+# theme function
+theme_nature <- function() {
+  ggplot2::theme(panel.background = ggplot2::element_blank(),
+                 panel.grid = ggplot2::element_blank(),
+                 strip.background = ggplot2::element_blank(),
+                 text = ggplot2::element_text(family = "Helvetica Neue"),
+                 axis.line = ggplot2::element_line(colour = "black", linewidth = .2),
+                 axis.ticks = ggplot2::element_line(colour = "black", linewidth = .2),
+                 axis.ticks.length = ggplot2::unit(1.75, "mm"),
+                 axis.title = ggplot2::element_text(size = 11),
+                 axis.text = ggplot2::element_text(size = 10),
+                 plot.title = ggplot2::element_text(size = 11, hjust = .5),
+                 legend.title = ggplot2::element_text(size = 11),
+                 legend.text = ggplot2::element_text(size = 10))
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 

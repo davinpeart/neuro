@@ -119,11 +119,7 @@ enframe_prop_integer <- function(y) {
   }
 }
 
-# calculate bayes factor using savage-dickey method
-savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
-                             colour_scheme = "blue") {
-
-  # function to parse terms from ...
+# function to parse terms from ...
   extract_expression_terms <- function(string) {
     terms <- strsplit(string, "[+-/*()]")[[1]]
     for(i in 1:length(terms)) {
@@ -132,18 +128,22 @@ savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 100
     return(terms[terms != "" & !grepl(pattern = "exp|log", x = terms)])
   }
 
+# calculate bayes factor using savage-dickey method
+savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
+                             colour_scheme = "blue") {
+
   # posterior
   code = deparse(substitute(...))
   terms <- unique(extract_expression_terms(string = code))
   if(length(terms) == 1) {
     posterior.code <- gsub(pattern = terms, x = code,
-                           replacement = paste0("as.data.frame(brmsfit$fit)$", terms))
+                           replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms, "`")))
   } else {
     posterior.code <- gsub(pattern = terms[1], x = code,
-                           replacement = paste0("as.data.frame(brmsfit$fit)$", terms[1]))
+                           replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms[1], "`")))
     for(i in 2:length(terms)) {
       posterior.code <- gsub(pattern = terms[i], x = posterior.code,
-                             replacement = paste0("as.data.frame(brmsfit$fit)$", terms[i]))
+                             replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms[i], "`")))
     }
   }
   posterior.samples <- eval(parse(text = posterior.code))
@@ -160,13 +160,13 @@ savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 100
     }
   }
   if(length(prior.terms) == 1) {
-    prior.code <- paste0("as.data.frame(brmsfit$fit)$", prior.terms)
+    prior.code <- paste0("as.data.frame(brmsfit$fit)$", paste0("`", prior.terms[i], "`"))
   } else {
     prior.code <- gsub(pattern = terms[1], x = code,
-                       replacement = paste0("as.data.frame(brmsfit$fit)$", prior.terms[1]))
+                       replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms[1], "`")))
     for(i in 2:length(prior.terms)) {
       prior.code <- gsub(pattern = terms[i], x = prior.code,
-                         replacement = paste0("as.data.frame(brmsfit$fit)$", prior.terms[i]))
+                         replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms[i], "`")))
     }
   }
   prior.samples <- eval(parse(text = prior.code))
@@ -238,21 +238,33 @@ savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 100
 }
 
 # visualize posterior of the expected value
-ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot = "preds",
-                          wrap, points = F, hline = F, marginalize = F) {
+ribbon_epreds <- function(brmsfit, x, y, wrap, grid, method = median, probs = c(.5, .89), plot = "preds",
+                          points = T, hline = F, marginalize = T, nrow = NULL) {
+
+  # obtain variable names as strings
+    yname <- deparse(substitute(y))
+    xname <- deparse(substitute(x))
+
+    if(!missing(wrap)) {
+      wrapvar <- deparse(substitute(wrap))
+    }
+
+    if(!missing(grid)) {
+      gridvars <- strsplit(extract_expression_terms(deparse(substitute(grid))), split = "~")[[1]]
+    }
 
   # obtain posterior of the expected value
   if(plot == "preds") {
-    epreds <- as.data.frame(t(brms::posterior_epred(brmsfit)))
+    epreds <- as.data.frame(t(brms::posterior_epred(brmsfit, resp = yname)))
     colnames(epreds) <- gsub("V", "", colnames(epreds))
   }
 
   if(plot == "reps") {
-    epreds <- as.data.frame(t(brms::posterior_predict(brmsfit)))
+    epreds <- as.data.frame(t(brms::posterior_predict(brmsfit, resp = yname)))
     colnames(epreds) <- gsub("V", "", colnames(epreds))
   }
 
-  # integrate with information used from the observed data
+  # bind to information used from the observed data
   epreds <- cbind(brmsfit$data, epreds)
 
   # make tidy for summary and plotting
@@ -262,13 +274,39 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
     names_to = "Draw",
     values_to = "epred")
 
-  # summarise plotting statistics
-  if(!missing(wrap)) {
+  # summarize plotting statistics
+  if(!missing(wrap) & !marginalize) {
     epred_sum <- epreds %>%
       dplyr::group_by({{x}}, {{wrap}})
   }
 
-  if(missing(wrap) & marginalize) {
+  if(!missing(wrap) & marginalize) {
+    epred_sum <- epreds %>%
+      dplyr::group_by({{x}}, {{wrap}}, Draw) %>%
+      dplyr::reframe(xname = unique({{x}}),
+                     wrapnamename = unique({{wrap}}),
+                     epred = mean(epred)) %>%
+      dplyr::group_by({{x}}, {{wrap}})
+  }
+
+  if(!missing(grid) & marginalize) {
+    gridvar1 <- gridvars[1]
+    gridvar2 <- gridvars[2]
+    epred_sum <- epreds %>%
+      dplyr::group_by({{x}}, !!sym(gridvars[1]), !!sym(gridvars[2]), Draw) %>%
+      dplyr::reframe(xname = unique({{x}}),
+                     gridvar1 = unique(!!sym(gridvars[1])),
+                     gridvar2 = unique(!!sym(gridvars[2])),
+                     epred = mean(epred)) %>%
+      dplyr::group_by({{x}}, !!sym(gridvars[1]), !!sym(gridvars[2]))
+  }
+
+  if(!missing(grid) & !marginalize) {
+    epred_sum <- epreds %>%
+      dplyr::group_by({{x}}, !!sym(gridvars[1]), !!sym(gridvars[2]))
+  }
+
+  if(missing(wrap) & missing(grid) & marginalize) {
     xname <- deparse(substitute(x))
 
     epred_sum <- epreds %>%
@@ -279,7 +317,7 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
       group_by({{x}})
   }
 
-  if(missing(wrap) & !marginalize) {
+  if(missing(wrap) & missing(grid) & !marginalize) {
     epred_sum <- epreds %>%
       dplyr::group_by({{x}})
   }
@@ -320,7 +358,13 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
   # add wrap
   if(!missing(wrap)) {
     plot <- plot +
-      ggplot2::facet_wrap(vars({{wrap}}), scales = "free_y", nrow = 2, axes = "all_y")
+      ggplot2::facet_wrap(ggplot2::vars({{wrap}}), scales = "free_y", nrow = nrow, axes = "all_y")
+  }
+
+  # add grid
+  if(!missing(grid)) {
+    plot <- plot +
+      ggplot2::facet_grid(grid)
   }
 
   # add hline at 0
@@ -330,7 +374,7 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
       ggplot2::geom_hline(yintercept = 0, colour = "grey30", linetype = "dotted")
   }
 
-  # add mean line
+  # add mean points
   if(points & marginalize) {
     if(!missing(wrap)) {
       plot <-
@@ -338,9 +382,17 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
         ggplot2::geom_point(data = brmsfit$data %>%
                               dplyr::group_by({{x}}, {{wrap}}) %>%
                               dplyr::summarize(y = mean({{y}})), aes(y = y),
-                            colour = neuro::nature_palette("blue")[6], linewidth = .6)
+                            colour = neuro::nature_palette("blue")[6], stroke = .6)
     }
-    if(missing(wrap)) {
+    if(!missing(grid)) {
+      plot <-
+        plot +
+        ggplot2::geom_point(data = brmsfit$data %>%
+                              dplyr::group_by({{x}}, !!sym(gridvars[1]), !!sym(gridvars[2])) %>%
+                              dplyr::summarize(y = mean({{y}})), aes(y = y),
+                            colour = neuro::nature_palette("blue")[6], stroke = .6)
+    }
+    if(missing(wrap) & missing(grid)) {
       plot <-
         plot +
         ggplot2::geom_point(data = brmsfit$data %>%
@@ -360,64 +412,43 @@ ribbon_epreds <- function(brmsfit, x, y, method = mean, probs = c(.8, .99), plot
   return(list(plot, epreds, epred_sum))
 }
 
-# plot posterior predictive distribution for negative binomial variables
-plot_posterior_pred <- function(data, col, fac, draws,
-                                pt.size = 3, pt.stroke = .2, pt.shape = 21,
-                                lwd.bar = .2, lwd.den = .8, adj = 1,
-                                xlab = NULL, xlim = NULL) {
-
-  # extract distributional parameters
-  mu1 <- draws[draws["Group"] == "E", ][["mu"]]
-  mu2 <- draws[draws["Group"] == "V", ][["mu"]]
-  pi1 <- draws[draws["Group"] == "E", ][["shape"]]
-  pi2 <- draws[draws["Group"] == "V", ][["shape"]]
-
-  # draw from posterior predictive distribution
-  preds <- data.frame(x = c(rnbinom(10000, mu = exp(mu1), size = exp(pi1)),
-                            rnbinom(10000, mu = exp(mu2), size = exp(pi2))))
-
-  # graph posterior predictions
-  p <-
-    ggplot(
-      enframe_prop_integer(preds$x),
-      aes(x = integer, y = prop)) +
-    geom_bar(stat = "identity", fill = "#98A9C0", colour = "#55587D", linewidth = lwd.bar) +
-    geom_density(inherit.aes = F, data = preds, aes(x = x), adjust = adj,
-                 colour = "#55587D", linewidth = lwd.den, bounds = c(0, Inf)) +
-    theme(panel.background = element_rect(fill = "#EBEEF2"),
-          axis.line = element_line(colour = "grey40"),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          axis.line.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          axis.text.x = element_blank(),
-          axis.title.x = element_blank(),
-          axis.line.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          axis.text.y = element_blank(),
-          axis.title.y = element_blank()) +
-    scale_y_continuous(expand = c(0,0)) +
-    scale_x_continuous(limits = xlim) +
-    guides(x = "prism_offset", y = "prism_offset")
-
-  # plot distribution of sample data
-  s <-
-    ggplot(
-      data, aes(x = {{col}}, y = {{fac}})) +
-    geom_point(shape = pt.shape, size = pt.size, fill = "#98A9C0", colour = "#55587D",
-               stroke = pt.stroke, position = position_jitter(height= 0.01)) +
-    theme(text = element_text(colour = "grey20"),
-          panel.background = element_rect(fill = "#EBEEF2"),
-          axis.ticks = element_line(linewidth = .3),
-          axis.line = element_line(colour = "grey40", linewidth = .3),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          axis.title.y = element_blank(),
-          axis.title.x = element_text(face = "bold")) +
-    labs(x = xlab) +
-    scale_y_discrete() +
-    scale_x_continuous(limits = xlim) +
-    guides(x = "prism_offset", y = "prism_offset")
-
-  p / s + plot_layout(axes = "collect", heights = c(1, .2))
+# function for vectorized brms priors
+priors <- function(..., data, prior, exception = "Intercept", class = "b", dpar = "", nlpar = "",
+                   lb = NA, ub = NA, resp = "") {
+  pars <- grep(pattern = exception, invert = T, value = T, colnames(model.matrix(..., data)))
+  priors <- brms::set_prior(prior = prior, class = class, coef = pars[1], nlpar = nlpar, dpar = dpar,
+                            lb = lb, ub = ub, resp = resp)
+  for(i in 2:length(pars)) {
+    priors <- c(priors,
+                brms::set_prior(prior = prior, class = class, coef = pars[i], nlpar = nlpar, dpar = dpar,
+                                lb = lb, ub = ub, resp = resp))
+  }
+  return(priors)
 }
+
+# logit function
+logit <- function(p) {
+  log(p / (1 - p))
+}
+
+# double exponential curve
+double_exponential <- function(x, intercept, asymptote, alpha, beta) {
+  intercept - asymptote*(exp(-x / alpha) - exp(-x / beta))
+}
+
+# exponential curve
+asymptotic_exponential <- function(x, intercept, asymptote, beta) {
+  asymptote - (asymptote - intercept)*exp(-x / beta)
+}
+
+# generalized logistic
+generalized_logistic <- function(A, K, B, Q, M, t, v) {
+  A + ((K - A) / ((1 + Q*exp(-1*B*(t-M)))^(1/v)))
+}
+
+
+
+
+
+
+

@@ -9,8 +9,10 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Description: Fit, wrangle, and visualize bayesian regression models, set
+    aesthetics of plots created using ggplot2, visualize principal components
+    obtained using the funciton prcomp, and perform and visualize operations
+    involving correlations.
+License: CC BY
 Encoding: UTF-8
 LazyData: true
