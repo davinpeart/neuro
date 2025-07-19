@@ -1,4 +1,17 @@
 # scree plot of variance explained
+#' Scree plot of explained variance from prcomp object
+#'
+#' @param pc PCA computed using prcomp.
+#' @param ncomp Number of components up to which to display.
+#' @param nret Number of components to retain.
+#' @param return A string, either "data" or "plot".
+#'
+#' @returns See return.
+#' @export
+#'
+#' @examples
+#' data <- data.frame(a = rnorm(n = 20), b = rnorm(n = 20), c = rnorm(n = 20), d = rnorm(n = 20))
+#' pc <- prcomp(x = data)
 plot_importance <- function(pc, ncomp = 9, nret = 3, return = NULL) {
   require(ggplot2)
   imp <- as.data.frame(summary(pc)$importance)[c("Proportion of Variance",

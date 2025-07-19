@@ -20,8 +20,19 @@ log_dskellam_loo <- function(y, mu, s, n_draws) {
 }
 
 # rng
-rskellam <- function(n, mu, s) {
-  va = abs(mu) + s
+#' Random somplaing from the skellam distribution
+#'
+#' @param n Number of samples.
+#' @param mu Value of the mean.
+#' @param sigma Value of the difference between the absolute value of the mean and variance.
+#'
+#' @returns A numeric vecotr of samples of length n.
+#' @export
+#'
+#' @examples
+#' rskellam(n = 100, mu = 2, sigma = 1)
+rskellam <- function(n, mu, sigma) {
+  va = abs(mu) + sigma
   mu1 = (mu + va)/2
   mu2 = (va - mu)/2
   return(rpois(n, mu1) - rpois(n, mu2))
@@ -93,11 +104,23 @@ log_dskellamzi_loo <- function(y, mu, s, zi, n_draws) {
 }
 
 # rng
-rskellamzi <- function(n, mu, s, zi) {
-  va = abs(mu)+s
+#' Random sampling from the zero-inflated skellam distribution
+#'
+#' @param n Number of samples.
+#' @param mu Value of the mean.
+#' @param sigma Value of the difference between the absolute value of the mean and variance.
+#' @param zeta Probability of zero occuring.
+#'
+#' @returns A Numeric vector of samples of length n.
+#' @export
+#'
+#' @examples
+#' rskellamzi(n = 100, mu = 3, sigma = 1, zeta = .3)
+rskellamzi <- function(n, mu, sigma, zeta) {
+  va = abs(mu)+sigma
   mu1 = (mu+va)/2
   mu2 = (va-mu)/2
-  n_zero = n-sum(rbinom(n = n,size = 1, prob = (1-zi)))
+  n_zero = n-sum(rbinom(n = n,size = 1, prob = (1-zeta)))
   zeros <- rep(x = 0, times = n_zero)
   non_zeros <- rpois(n-n_zero, mu1)-rpois(n-n_zero, mu2)
   all <- c(zeros, non_zeros)

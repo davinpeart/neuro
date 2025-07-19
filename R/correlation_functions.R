@@ -1,5 +1,18 @@
 # matrix of p values for correlation coeficients
-cor_test_mat <- function(x, method) {
+#' Matrix of p-values for hypothesis testing of correlation coefficients
+#'
+#' @param x A wide dataframe with columns containing numeric variables to be tested
+#' @param method Method of calculating correlation coefficient supplied to cor.test.
+#' One of: "pearson", "kendall", "spearman".
+#'
+#' @returns A symmetric numeric matrix containing p-values for the correlation coefficients calculated for
+#' each pair of variables in x.
+#' @export
+#'
+#' @examples
+#' x <- data.frame(a = rnorm(n = 10), b = rnorm(n = 10), c = rnorm(n = 10))
+#' cor_test_mat(x = x, method = "spearman")
+cor_test_mat <- function(x, method = "pearson") {
   N <- ncol(x)
   vars <- colnames(x)
   y <- matrix(nrow = N, ncol = N)
@@ -17,6 +30,30 @@ cor_test_mat <- function(x, method) {
 }
 
 # plot correlation matrix given r and p matrices
+#' Plot of correlation matrix showing coefficients and significance
+#'
+#' @param rmat Numeric matrix of correlation coefficients.
+#' @param pmat Numeric matrix of identical structure to rmat containing correlation coefficient p-values.
+#' @param sepvars Character vector of dimnames of rmat and pmat to be moved to the edge of the plot.
+#' @param show_legend Logical indicating whether to plot a legend for colour map of correlation coefficient.
+#' @param lwd Linewidth of squares containing correlation coefficients.
+#' @param mid_fill String indicating colour for a correlation coefficient of 0.
+#' @param axis_rel Relative size of axis text.
+#' @param legend_rel Relative size of legend text.
+#' @param guide_rel Relative size of legend title.
+#' @param fill_cols Character vector of length 2 containing colours mapped to correlation coefficients of -1 and 1.
+#' @param line_col Colour of the lines separating the squares containing each correlation coefficient.
+#' @param rsize Size of the text indicating the values of the correlation coefficients.
+#' @param psize Size of the text indicating significance.
+#'
+#' @returns A ggplot depicting the correlation matrix
+#' @export
+#'
+#' @examples
+#' x <- data.frame(a = rnorm(n = 10), b = rnorm(n = 10), c = rnorm(n = 10))
+#' rmat <- cor(x = x)
+#' pmat <- cor_test_mat(x = x, method = "spearman")
+#' plot_cor_pmat(rmat = rmat, pmat = pmat)
 plot_cor_mat <- function(rmat, pmat, sepvars = NULL, show_legend = T, lwd = 0, mid_fill = "white",
                          axis_rel = .7, legend_rel = .7, guide_rel = .9,
                          fill_cols = c("#657EA1", "#FA819E"), line_col = "white", rsize = 3, psize = 2) {
@@ -99,7 +136,24 @@ plot_cor_mat <- function(rmat, pmat, sepvars = NULL, show_legend = T, lwd = 0, m
 }
 
 # function for significance testing of correlation coefficients between groups
-fisher_r_to_z <- function(r1, r2, n, return = "p") {
+#' Significance testing of the difference of correlation coefficients to a null hypothesis of 0
+#'
+#' @param r1 Numeric value of a correlation coefficient.
+#' @param r2 Numeric value of another correlation coefficient.
+#' @param n1 The number of samples used to calculate r1.
+#' @param n2 The number of samples used to calculate r2.
+#' @param return A string indicating the desired output. "p" returns a numeric p-value.
+#' "k" returns a length-2 numeric vector containing the z-scores of each correlation coefficient.
+#' "z" returns the test statistic used in the difference between the correlation coefficients.
+#'
+#' @returns See return parameter.
+#' @export
+#'
+#' @examples
+#' r1 <- runif(n = 1, min = -1, max = 1)
+#' r2 <- runif(n = 1, min = -1, max = 1)
+#' fisher_r_to_z(r1 = r1, r2 = r2, n1 = 10, n2 = 10, return = "p")
+fisher_r_to_z <- function(r1, r2, n1, n2, return = "p") {
   if(r1 == r2 & r1 == 1) {
     return(if(return == "p") 1 else if(return == "k") NA else if(return == "z") 0)
   }
@@ -108,12 +162,27 @@ fisher_r_to_z <- function(r1, r2, n, return = "p") {
   for(i in 1:2) {
     k[i] <- 0.5 * (log(1 + r[i]) - log(1 - r[i]))
   }
-  z <- (k[1] - k[2]) / sqrt((1 / (n - 3)) + (1 / (n - 3)))
+  z <- (k[1] - k[2]) / sqrt((1 / (n1 - 3)) + (1 / (n2 - 3)))
   p <- pnorm(q = z, mean = 0, sd = 1, lower.tail = if(z > 0) FALSE)*2
   return(if(return == "p") p else if(return == "k") k else if(return == "z") z)
 }
 
 # volcano plot of comparisons of correlation coefficients between groups
+#' Volcano plot of significance testing of differences between two matrices of correlation coefficients
+#'
+#' @param cor1 Numeric matrix of correlation coefficients.
+#' @param cor2 Numieric matrix of correlation coefficients with identical dimensions to cor1.
+#' @param plab Numeric value of -log10(p) above which points will be labeled.
+#' @param return A string indicating whether to return a "graph" or "data".
+#' @param colours A character vector of length 3 containing colours to fill negative, small, and positive fold-change values.
+#'
+#' @returns See parameter return.
+#' @export
+#'
+#' @examples
+#' cor1 <- cor(x = data.frame(a = rep(c("a", "b"), each = 10), b = rnorm(n = 20), c = rnorm(n = 20), d = rnorm(n = 20))[1:10, 2:4])
+#' cor2 <- cor(x = data.frame(a = rep(c("a", "b"), each = 10), b = rnorm(n = 20), c = rnorm(n = 20), d = rnorm(n = 20))[11:20, 2:4])
+#' plot_volcano(cor1 = cor1, cor2 = cor2)
 plot_volcano <- function(cor1, cor2, plab = .1, return = "graph",
                          colours = c("#FA819E", "#5f83ea", "grey70")) {
   # check if matrices have the same variables in the same order
@@ -204,6 +273,17 @@ plot_volcano <- function(cor1, cor2, plab = .1, return = "graph",
 }
 
 # function for location of k-means elbow
+#' Scree plot of SS of k-means up to a specified value of k
+#'
+#' @param matrix Numeric matrix of correlation coefficients.
+#' @param max.k Maximum value of k up to which SS will be displayed.
+#'
+#' @returns A ggplot scree plot of SS or k-means outputs up to max.k.
+#' @export
+#'
+#' @examples
+#' matrix <- cor(x = data.frame(a = rnorm(n = 20), b = rnorm(n = 20), c = rnorm(n = 20), d = rnorm(n = 20)))
+#' k_means_scree_plot(matrix = matrix, max.k = 7)
 k_means_scree_plot <- function(matrix, max.k) {
   list.k <- vector("list", max.k)
   within.ss <- vector("numeric", max.k)
@@ -212,13 +292,12 @@ k_means_scree_plot <- function(matrix, max.k) {
     within.ss[i] <- sum(list.k[[i]]$withinss)
   }
   plot <- ggplot2::ggplot(data.frame(x = 1:max.k, y = within.ss), aes(x = x, y = y)) +
-    ggplot2::geom_line(linewidth = 1.5, colour = "grey60") +
-    ggplot2::geom_point(shape = 21, fill = "lightblue", colour = "lightpink2",
-                        size = 4.5, stroke = 1) +
+    ggplot2::geom_line(colour = "black") +
+    ggplot2::geom_point(shape = 21, fill = nature_palette("blue", 3), colour = nature_palette("blue", 5), size = 3) +
     ggplot2::scale_x_continuous(breaks = 1:max.k) +
     ggplot2::scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) +
     ggplot2::labs(y = "Within-Cluster SS", x = "Number of Custers", title = "K-Means Elbow") +
-    neuro::theme_cell(background = F)
+    neuro::theme_nature()
   return(list(plot = plot, clusters = list.k))
 }
 

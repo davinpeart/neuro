@@ -1,6 +1,26 @@
 # graphical predictive check for bayesian regression models
+#' Plot density of two descriptive statistics of draws against observed values
+#'
+#' @param yrep Matrix of posterior predictive distributions with the same number of columns as rows in y.
+#' @param y Vector of observed values.
+#' @param ynu1 (Optional) Vector of previously observed values.
+#' @param ynu2 (Optional) Vector of previously observed values.
+#' @param nbin Number of bins of density cutoffs.
+#' @param stat1 Function to be performed on y and each draw of yrep.
+#' @param stat2 Function to be performed on y and each draw of yrep.
+#' @param fill_limits Limits of the colour gradient mapped to the density of descriptives.
+#' @param y_col Colour of plotted values of y.
+#'
+#' @returns A ggplot.
+#' @export
+#'
+#' @examples
+#' data <- data.frame(y = rnorm(n = 100))
+#' draws <- matrix(data = rnorm(n = 100 * 2000), nrow = 100)
+#' pp_stat_dens(yrep = draws, y = data$y)
 pp_stat_dens <- function(yrep, y, ynu1 = NULL, ynu2 = NULL, nbin = 4, stat1 = mean, stat2 = sd,
                          fill_limits = c("#FEF8F9", "#FA819E"), y_col = "teal") {
+
   # check fill_cols is length-2 vector of colours
   is.colour <- function(x) {
     !("try-error" %in% class(try(col2rgb(x), silent = TRUE)))
@@ -58,6 +78,18 @@ pp_stat_dens <- function(yrep, y, ynu1 = NULL, ynu2 = NULL, nbin = 4, stat1 = me
 }
 
 # extract decriptives from vector or matrix of observations
+#' Calculate desriptives of a vector of observations or matrix of posterior predicive distributions
+#'
+#' @param y Vector or matrix of values to be described.
+#' @param stat1 Function to calculate descriptive 1.
+#' @param stat2 Function to calculate descriptive 2.
+#'
+#' @returns Dataframe containing stat1 and stat2 of y.
+#' @export
+#'
+#' @examples
+#' data <- data.frame(y = rnorm(n = 100))
+#' enframe_descriptives(y = data$y)
 enframe_descriptives <- function(y, stat1 = mean, stat2 = var) {
   if(is.vector(y)) {
     opv <- data.frame(s1 = stat1(y), s2 = stat2(y))
@@ -79,6 +111,16 @@ enframe_descriptives <- function(y, stat1 = mean, stat2 = var) {
 }
 
 # enframe proportion of integers
+#' Obtain the proportion of each integer in a set of values
+#'
+#' @param y Vector of observed values or array of posterior predictive distributions.
+#'
+#' @returns Dataframe containing proportion of each integer contained in y.
+#' @export
+#'
+#' @examples
+#' data <- data.frame(y = rpois(n = 1000, lambda = 3))
+#' enframe_prop_integer(y = data$y)
 enframe_prop_integer <- function(y) {
   if(is.vector(y)) {
     x <- table(y)
@@ -129,8 +171,26 @@ enframe_prop_integer <- function(y) {
   }
 
 # calculate bayes factor using savage-dickey method
-savage.dickey.bf <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
-                             colour_scheme = "blue") {
+#' Bayesian hypothesis testing using Savage-Dickey density ratio as Bayes Factor.
+#' Prior samples and saving of parameters when fitting required. See example code
+#'
+#' @param brmsfit An object of class brmsfit.
+#' @param ... An expression indicating the posterior to be tested against the null.
+#' @param point.null The value of the point null hypothesis.
+#' @param plot Logical indicating whether to return a plot of the hypothesis. If F, returns a Bayes Factor in facour of the null.
+#' @param gamma Resolution of sampling from the prior and posterior distributions for plotting.
+#' @param colour_scheme String indicating a single value to be supplied to nature_pallete(). Optionally
+#' a string containing two values separated by "-". See ?nature_pallete for acceptable inputs.
+#'
+#' @returns See argument plot.
+#' @export
+#'
+#' @examples
+#' data <- data.frame(a = rep(c("a", "b"), each = 30), b = c(rnorm(n = 30), rnorm(n = 30, mean = 3)))
+#' fit <- brms::brm(b ~ 1 + a, data = data, sample_prior = "yes", save_pars = save_pars(all = TRUE))
+#' savage.dickey(brmsfit = fit, b_a)
+savage.dickey <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
+                          colour_scheme = "blue") {
 
   # posterior
   code = deparse(substitute(...))
