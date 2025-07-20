@@ -163,9 +163,9 @@ enframe_prop_integer <- function(y) {
 
 # function to parse terms from ...
   extract_expression_terms <- function(string) {
-    terms <- strsplit(string, "[+-/*()]")[[1]]
+    terms <- stringr::strsplit(string, "[+-/*()]")[[1]]
     for(i in 1:length(terms)) {
-      terms[i] <- paste0(str_extract_all(terms[i], "[^ ]")[[1]], collapse = "")
+      terms[i] <- paste0(stringr::str_extract_all(terms[i], "[^ ]")[[1]], collapse = "")
     }
     return(terms[terms != "" & !grepl(pattern = "exp|log", x = terms)])
   }
@@ -298,8 +298,36 @@ savage.dickey <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
 }
 
 # visualize posterior of the expected value
+#' Visualization of the posterior of the expected value by group.
+#'
+#' @param brmsfit Fit of class brmsfit.
+#' @param x Expression of variable to be mapped to the x axis.
+#' @param y Expression of variable to be mapped to the y axis (the dependent variable).
+#' @param wrap Expression of variable to be passed to facet_wrap.
+#' @param grid Two-sided formula to be passed to facet_grid. The LHS should contain the variable to be
+#' displayed in the rows of the grid and the RHS should contain the variable to be mapped to the columns.
+#' @param method A function indicating the method of calculating the point estimate of the posterior.
+#' @param probs A numeric vector of length 2 indicating the length of the CIs.
+#' @param plot A string indicating whether to plot "preds" or "reps".
+#' @param points Logical indicating whether to plot points.
+#' @param hline Logical indicating whether to draw a line at x = 0.
+#' @param marginalize Logical indicating whether samples should be marginalized within draws. If there are multiple
+#' draws within each component of the specified design (e.g., repeated measures within subjects), then marginalize should be TRUE.
+#' @param nrow Number of rows passed to facet_wrap.
+#'
+#' @returns A list of length 3 containing the specified plot, a dataframe containing samples bound to the original observations,
+#' and a summarized dataframe containing point estimates and CIs for the specified design.
+#' @export
+#'
+#' @examples
+#' data("iris")
+#' sepal <- brms::brm(Sepal.Length ~ 1 + Sepal.Width + (1|Species), data = iris,
+#' save_pars = brms::save_pars(all = TRUE), sample_prior = TRUE)
+#' ribbon_epreds(brmsfit = sepal, x = Sepal.Width, y = Sepal.Length, wrap = Species, nrow = 1)
+#'
+#'
 ribbon_epreds <- function(brmsfit, x, y, wrap, grid, method = median, probs = c(.5, .89), plot = "preds",
-                          points = T, hline = F, marginalize = T, nrow = NULL) {
+                          points = T, hline = F, marginalize = F, nrow = NULL) {
 
   # obtain variable names as strings
     yname <- deparse(substitute(y))
@@ -487,24 +515,83 @@ priors <- function(..., data, prior, exception = "Intercept", class = "b", dpar 
 }
 
 # logit function
+#' Logit
+#'
+#' @param p A probability between 0 and 1 to be tranformed to unbounded parameter space.
+#'
+#' @returns A numeric value.
+#' @export
+#'
+#' @examples
+#' logit(p = .75)
 logit <- function(p) {
   log(p / (1 - p))
 }
 
 # double exponential curve
+#' Exponential change
+#'
+#' @param x Numeric value(s) of time.
+#' @param intercept Numeric intercept at t = 0.
+#' @param asymptote Numeric level of asymptote of change.
+#' @param alpha Numeric rate of change.
+#' @param beta Numeric rate of change.
+#'
+#' @returns Numeric value of change at t = x.
+#' @export
+#'
+#' @examples
+#' double exponential(x = 3, intercept = 1, asymptote = 5, alpha = 5, beta = 7)
 double_exponential <- function(x, intercept, asymptote, alpha, beta) {
   intercept - asymptote*(exp(-x / alpha) - exp(-x / beta))
 }
 
 # exponential curve
+#' Exponential change from intercept toward asymptote.
+#'
+#' @param x Numeric value of time.
+#' @param intercept Numeric value of intercept at t = 0.
+#' @param asymptote Numeric asymptote of change.
+#' @param beta Numeric rate of change.
+#'
+#' @returns Numeric value fo change at t = x.
+#' @export
+#'
+#' @examples
+#' asymptotic_exponential(x = .3, intercept = 2, asymptote = 1, beta = 1)
 asymptotic_exponential <- function(x, intercept, asymptote, beta) {
   asymptote - (asymptote - intercept)*exp(-x / beta)
 }
 
 # generalized logistic
+#' Logistic change
+#'
+#' @param A The left asymptote.
+#' @param K The right asymptote.
+#' @param B Maximum rate of change.
+#' @param Q Translation along the x axis (useful in specification of y at t = 0).
+#' @param M Alternative method of translation along the x axis; starting time.
+#' @param t Time.
+#' @param v Asymptotic skew of change.
+#'
+#' @returns Numeric value of y at t = t.
+#' @export
+#'
+#' @examples
+#' generalized_logistic(A = 1, K = 10, B = 1, Q = 10, M = 0, t = seq(0, 10, .1), v = .5)
 generalized_logistic <- function(A, K, B, Q, M, t, v) {
   A + ((K - A) / ((1 + Q*exp(-1*B*(t-M)))^(1/v)))
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

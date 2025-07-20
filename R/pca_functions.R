@@ -12,7 +12,7 @@
 #' @examples
 #' data <- data.frame(a = rnorm(n = 20), b = rnorm(n = 20), c = rnorm(n = 20), d = rnorm(n = 20))
 #' pc <- prcomp(x = data)
-plot_importance <- function(pc, ncomp = 9, nret = 3, return = NULL) {
+plot_importance <- function(pc, ncomp = 9, nret = 3, return = "plot") {
   require(ggplot2)
   imp <- as.data.frame(summary(pc)$importance)[c("Proportion of Variance",
                                                 "Cumulative Proportion"),]

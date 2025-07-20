@@ -4,7 +4,7 @@
 \alias{plot_importance}
 \title{Scree plot of explained variance from prcomp object}
 \usage{
-plot_importance(pc, ncomp = 9, nret = 3, return = NULL)
+plot_importance(pc, ncomp = 9, nret = 3, return = "plot")
 }
 \arguments{
 \item{pc}{PCA computed using prcomp.}
