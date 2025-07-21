@@ -163,7 +163,7 @@ enframe_prop_integer <- function(y) {
 
 # function to parse terms from ...
   extract_expression_terms <- function(string) {
-    terms <- stringr::strsplit(string, "[+-/*()]")[[1]]
+    terms <- strsplit(string, "[+-/*()]")[[1]]
     for(i in 1:length(terms)) {
       terms[i] <- paste0(stringr::str_extract_all(terms[i], "[^ ]")[[1]], collapse = "")
     }
