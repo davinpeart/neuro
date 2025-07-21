@@ -583,7 +583,64 @@ generalized_logistic <- function(A, K, B, Q, M, t, v) {
   A + ((K - A) / ((1 + Q*exp(-1*B*(t-M)))^(1/v)))
 }
 
+#' Formulae for generalized non-linear regression
+#'
+#' @description
+#' These formulae are parameterized such that the mean is constrained to non-negative reals.
+#' Each non-linear parameter will be modeled in logarithmic space.
+#'
+#'
+#' @param dv Expression containing the name of the variable on the LHS of the formula.
+#' @param t Expression containing the name of the variable on the RHS of the formula.
+#' @param curve String indicating the type of curve to be generated. One of "exp",
+#' "double exp", or "logistic".
+#' @param t0 (Optional) The starting time.
+#'
+#' @returns An object of class formula. See functions asymptotic_exponential(),
+#' double_exponential(), and generalized_logistic for more details on the non-linear parameters.
+#' @export
+#'
+#' @examples
+#' x <- runif(n = 200, min = 0, max = 5)
+#' data <- data.frame(x = x, y = rpois(n = 200, lambda = 6 - (6 - 1) * exp(-x / 1) ))
+#' fit <-
+#' brms::brm(brms::bf(
+#'   nlnb_formula(dv = y, t = x, curve = "exp", t0 = 0),
+#'   L + M + o ~ 1,
+#'   nl = TRUE),
+#'   data = data,
+#'   family = poisson(link = "identity"),
+#'   control = list(adapt_delta = .9, max_treedepth = 12))
+nlnb_formula <- function(dv, t, curve, t0) {
 
+  dv_name <- deparse(substitute(dv))
+  t_name <- deparse(substitute(t))
+  if(!missing(t0)) {
+    t0_text <- paste0(" - ", t0)
+  } else {
+    t0_text <- ""
+  }
+
+  if(curve == "exp") {
+    x <-
+      paste0(dv_name, " ~ exp(L) - (exp(L) - exp(M))*exp(-(", t_name,
+             t0_text, ") / exp(o))")
+  }
+
+  if(curve == "double exp") {
+    x <-
+      paste0(dv_name, " ~ exp(C) - exp(D)*(exp(-(", t_name, t0_text,
+             ") / exp(r)) - exp(-(", t_name, t0_text, ") / (exp(r) + exp(s))))")
+  }
+
+  if(curve == "logistic") {
+    x <-
+      paste0(dv_name, " ~ exp(A) + (exp(K) / ((1 + exp(Q)*exp(-exp(B)*(",
+             t_name, t0_text, ")))^(1/exp(v))))")
+  }
+  output <- as.formula(x)
+  return(output)
+}
 
 
 
