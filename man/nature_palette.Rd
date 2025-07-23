@@ -4,7 +4,7 @@
 \alias{nature_palette}
 \title{Colour palettes used in nature journals}
 \usage{
-nature_palette(colour = NULL, n = NULL)
+nature_palette(colour = NULL, n = NULL, gradn)
 }
 \arguments{
 \item{colour}{A string indicating the hue of the desired pallette. Must be one of:
@@ -12,6 +12,9 @@ nature_palette(colour = NULL, n = NULL)
 If NULL (the default), returns all hues.}
 
 \item{n}{an integer between 1 and 6 inclusive. Indicates the index of the palette desired.}
+
+\item{gradn}{(Optional) an integer between 1 and 6 inclusive. If supplied, will override n and
+return a monochromatic palette of hue colour and length gradn.}
 }
 \value{
 If neither colour nor n supplied, a list of legnth 10 with each element containing
