@@ -129,7 +129,7 @@ springer <- function(N, gradn) {
       return(c(colours$teal[3], colours$blue[3], colours$purple[3]))
     }
     if(N == 4) {
-      return(c(colours$teal[3], colours$blue[3], colours$purple[3]))
+      return(c(colours$green[3], colours$teal[3], colours$blue[3], colours$purple[3]))
     }
     if(N == 5) {
       return(c(colours$teal[3], colours$blue[3], colours$purple[3],
@@ -160,7 +160,7 @@ springer <- function(N, gradn) {
       return(c(colours$teal[gradn], colours$blue[gradn], colours$purple[gradn]))
     }
     if(N == 4) {
-      return(c(colours$teal[gradn], colours$blue[gradn], colours$purple[gradn]))
+      return(c(colours$green[3], colours$teal[gradn], colours$blue[gradn], colours$purple[gradn]))
     }
     if(N == 5) {
       return(c(colours$teal[gradn], colours$blue[gradn], colours$purple[gradn],

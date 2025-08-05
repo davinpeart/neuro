@@ -8,8 +8,12 @@
 #' @param nbin Number of bins of density cutoffs.
 #' @param stat1 Function to be performed on y and each draw of yrep.
 #' @param stat2 Function to be performed on y and each draw of yrep.
-#' @param fill_limits Limits of the colour gradient mapped to the density of descriptives.
-#' @param y_col Colour of plotted values of y.
+#' @param fill Colour of the gradient mapped to the density of descriptives. See ?nature_palette or ?springer.
+#' @param y_col Colour of plotted values of y. See ?nature_palette or ?springer.
+#' @param adjust Bandwidth of the density boundaries passed to geom_density2d_filled.
+#' @param linetype Linetype of the plot of y passed to geom_segment.
+#' @param linewidth Linewidth of the plot of y passed to geom_segment.
+#' @param stroke Linewidth of the shape of y passed to geom_point.
 #'
 #' @returns A ggplot.
 #' @export
@@ -18,26 +22,26 @@
 #' data <- data.frame(y = rnorm(n = 100))
 #' draws <- matrix(data = rnorm(n = 100 * 2000), nrow = 100)
 #' pp_stat_dens(yrep = draws, y = data$y)
-pp_stat_dens <- function(yrep, y, ynu1 = NULL, ynu2 = NULL, nbin = 4, stat1 = mean, stat2 = sd,
-                         fill_limits = c("#FEF8F9", "#FA819E"), y_col = "teal") {
+pp_stat_dens <- function(yrep, y, nbin = 4, stat1 = mean, stat2 = sd,
+                         fill = "yellow", y_col = "red",
+                         linetype = "dotted", adjust = 1, linewidth = .5, stroke = .5,
+                         ynu1 = NULL, ynu2 = NULL) {
 
   # check fill_cols is length-2 vector of colours
   is.colour <- function(x) {
     !("try-error" %in% class(try(col2rgb(x), silent = TRUE)))
   }
-  if(!is.colour(fill_limits) | length(fill_limits) != 2)
-    stop("fill_cols must be a length-2 vector of colours")
 
   # check y_col is a single colour in nature palette
   ops <- c("background", "grey", "olive", "green", "teal",
            "blue", "purple", "red", "orange", "yellow")
-  if(!(y_col %in% ops) | length(y_col) != 1)
-    stop(paste("y_col must be one of",
+  if(!(y_col %in% ops) | !(fill %in% ops) | length(y_col) != 1 | length(fill) != 1)
+    stop(paste("y_col and fill must each be one of:",
                paste0(ops, collapse = ", ")
     ))
 
   # set palette
-  ramp_palette <- grDevices::colorRampPalette(fill_limits)
+  ramp_palette <- grDevices::colorRampPalette(c("white", nature_palette(fill, 3)))
 
   # calculate statistics
   yrep_enf <- enframe_descriptives(yrep, stat1 = stat1, stat2 = stat2)
@@ -47,33 +51,21 @@ pp_stat_dens <- function(yrep, y, ynu1 = NULL, ynu2 = NULL, nbin = 4, stat1 = me
   graph <-
     ggplot2::ggplot(yrep_enf, ggplot2::aes(x = stat1, y = stat2)) +
     ggplot2::geom_density2d_filled(contour_var = "ndensity", bins = nbin,
-                                   linewidth = 0, alpha = 1, adjust = 1) +
+                                   linewidth = 0, alpha = 1, adjust = adjust) +
     ggplot2::scale_fill_manual(values = c(ramp_palette(nbin)),
                                name = "Prediction") +
     ggplot2::geom_segment(
       data = y_enf, ggplot2::aes(x = stat1, xend = stat1, y = -Inf,  yend = stat2),
-      colour = nature_palette(y_col, 4), linewidth = .7, linetype = "dotted") +
+      colour = nature_palette(y_col, 4), linewidth = linewidth, linetype = linetype) +
     ggplot2::geom_segment(
       data = y_enf, ggplot2::aes(x = -Inf, xend = stat1, y = stat2,  yend = stat2),
-      colour = nature_palette(y_col, 4), linewidth = .7, linetype = "dotted") +
+      colour = nature_palette(y_col, 4), linewidth = linewidth, linetype = linetype) +
     ggnewscale::new_scale_fill() +
     ggplot2::geom_point(data = y_enf, aes(fill = ""), colour = nature_palette(y_col, 5),
-                        size = 4, alpha = 1, shape = 21) +
+                        size = 4, alpha = 1, shape = 21, stroke = stroke) +
     ggplot2::scale_fill_manual(values = nature_palette(y_col, 3), name = "Sample") +
     ggplot2::labs(x = as.character(substitute(stat1)), y = as.character(substitute(stat2))) +
-    ggplot2::theme(
-      axis.line.y = ggplot2::element_line(colour = "grey50", linewidth = .7),
-      axis.ticks.y = ggplot2::element_line(colour = "grey50", linewidth = .7),
-      axis.ticks.x = ggplot2::element_line(colour = "grey50", linewidth = .5),
-      panel.background = ggplot2::element_blank(),
-      panel.grid = ggplot2::element_blank(),
-      panel.grid.major.y = ggplot2::element_blank(),
-      axis.ticks.length.x = ggplot2::unit(-.1, "cm"),
-      text = ggplot2::element_text(family = "Arial", colour = "grey20"),
-      axis.title = ggplot2::element_text(face = "bold", size = rel(.9)),
-      legend.title = ggplot2::element_text(face = "bold", size = rel(.9))) +
-    scale_x_continuous(expand = c(0, 0)) +
-    scale_y_continuous(expand = c(0, 0))
+    theme_nature()
   return(graph)
 }
 
@@ -161,14 +153,26 @@ enframe_prop_integer <- function(y) {
   }
 }
 
-# function to parse terms from ...
-  extract_expression_terms <- function(string) {
-    terms <- strsplit(string, "[+-/*()]")[[1]]
-    for(i in 1:length(terms)) {
-      terms[i] <- paste0(stringr::str_extract_all(terms[i], "[^ ]")[[1]], collapse = "")
-    }
-    return(terms[terms != "" & !grepl(pattern = "exp|log", x = terms)])
+# function to check if strings are function names
+exists_vec <- function(x) {
+  v <- c()
+  for(i in 1:length(x)) {
+    v[i] <- exists(x[i], envir = .GlobalEnv)
   }
+  v
+}
+
+# function to parse terms from ...
+extract_expression_terms <- function(string) {
+  terms <- strsplit(string, "[+-/*()]")[[1]]
+  for(i in 1:length(terms)) {
+    terms[i] <- paste0(stringr::str_extract_all(terms[i], "[^ ]")[[1]], collapse = "")
+  }
+  terms <- terms[terms != "" & !grepl(pattern = "^", x = terms, fixed = TRUE)]
+  terms <- terms[!exists_vec(terms)]
+  terms <- terms[is.na(suppressWarnings(as.double(terms)))]
+  return(terms)
+}
 
 # calculate bayes factor using savage-dickey method
 #' Bayesian hypothesis testing using Savage-Dickey density ratio as Bayes Factor.
@@ -177,7 +181,7 @@ enframe_prop_integer <- function(y) {
 #' @param brmsfit An object of class brmsfit.
 #' @param ... An expression indicating the posterior to be tested against the null.
 #' @param point.null The value of the point null hypothesis.
-#' @param plot Logical indicating whether to return a plot of the hypothesis. If F, returns a Bayes Factor in facour of the null.
+#' @param plot Logical indicating whether to return a plot of the hypothesis. If F, returns a Bayes Factor in favour of the null.
 #' @param gamma Resolution of sampling from the prior and posterior distributions for plotting.
 #' @param colour_scheme String indicating a single value to be supplied to nature_pallete(). Optionally
 #' a string containing two values separated by "-". See ?nature_pallete for acceptable inputs.

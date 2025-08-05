@@ -1,3 +1,35 @@
+# families =====================
+# percentages ------------------
+# beta(mu, shape)
+
+# non-negative integers --------
+# poisson(lambda)
+# poisson_lognormal(mu sigma)
+# negative_binomial(mu, phi)
+
+# integers ---------------------
+# skellam(mu, shape)
+# skellam_normal(mu, shape, sigma)
+
+# non-negative reals -----------
+# gamma(mu, shape)
+# lognormal(mu, sigma)
+
+# reals ------------------------
+# normal(mu, sigma)
+# student_t(df, mu, sigma)
+
+# mean(log(100:200))
+
+# options(contrasts = c("contr.sum", "contr.poly"))
+
+
+
+
+
+
+
+
 # negative binomial log alternative parameterization family function
 negative_binomial <- function(predict_ancillary, repeated_measures, priors,
                               standardize_coef) {
