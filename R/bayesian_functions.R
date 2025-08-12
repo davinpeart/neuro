@@ -197,7 +197,7 @@ savage.dickey <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
                           colour_scheme = "blue") {
 
   # posterior
-  code = deparse(substitute(...))
+  code = paste0(deparse(substitute(...)), collapse = "")
   terms <- unique(extract_expression_terms(string = code))
   if(length(terms) == 1) {
     posterior.code <- gsub(pattern = terms, x = code,
@@ -224,13 +224,14 @@ savage.dickey <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
     }
   }
   if(length(prior.terms) == 1) {
-    prior.code <- paste0("as.data.frame(brmsfit$fit)$", paste0("`", prior.terms[i], "`"))
+    prior.code <- gsub(pattern = terms[1], x = code,
+                       replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", prior.terms[1], "`")))
   } else {
     prior.code <- gsub(pattern = terms[1], x = code,
-                       replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms[1], "`")))
+                       replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", prior.terms[1], "`")))
     for(i in 2:length(prior.terms)) {
       prior.code <- gsub(pattern = terms[i], x = prior.code,
-                         replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", terms[i], "`")))
+                         replacement = paste0("as.data.frame(brmsfit$fit)$", paste0("`", prior.terms[i], "`")))
     }
   }
   prior.samples <- eval(parse(text = prior.code))
