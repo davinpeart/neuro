@@ -53,7 +53,7 @@ pp_stat_dens <- function(yrep, y, nbin = 4, stat1 = mean, stat2 = sd,
     ggplot2::geom_density2d_filled(contour_var = "ndensity", bins = nbin,
                                    linewidth = 0, alpha = 1, adjust = adjust) +
     ggplot2::scale_fill_manual(values = c(ramp_palette(nbin)),
-                               name = "Prediction") +
+                               name = "Replication") +
     ggplot2::geom_segment(
       data = y_enf, ggplot2::aes(x = stat1, xend = stat1, y = -Inf,  yend = stat2),
       colour = nature_palette(y_col, 4), linewidth = linewidth, linetype = linetype) +
@@ -590,10 +590,12 @@ generalized_logistic <- function(A, K, B, Q, M, t, v) {
 
 #' Formulae for generalized non-linear regression
 #'
+#' @title
+#' Generate a formula for use in a negative binomial, poisson, or gamma regression function
+#'
 #' @description
 #' These formulae are parameterized such that the mean is constrained to non-negative reals.
 #' Each non-linear parameter will be modeled in logarithmic space.
-#'
 #'
 #' @param dv Expression containing the name of the variable on the LHS of the formula.
 #' @param t Expression containing the name of the variable on the RHS of the formula.
@@ -603,6 +605,29 @@ generalized_logistic <- function(A, K, B, Q, M, t, v) {
 #'
 #' @returns An object of class formula. See functions asymptotic_exponential(),
 #' double_exponential(), and generalized_logistic for more details on the non-linear parameters.
+#'
+#' When curve = "exp", returns the following formula:
+#' y ~ exp(L) - (exp(L) - exp(M)) * exp(-(t)/exp(o))
+#' L = intercept
+#' M = asymptote
+#' o = rate of change
+#'
+#' When curve = "double exp", returns the following formula:
+#' y ~ exp(C) - exp(D) * (exp(-(t)/exp(r)) - exp(-(t)/(exp(r) + exp(s))))
+#' C = intercept
+#' D = asymptote
+#' r = rate of change 1
+#' s = rate of change 2 (above r, to constrain to growth or shrinkage)
+#'
+#' When curve = "logistic", returns the following formula:
+#' y ~exp(A) + (exp(K)/((1 + exp(Q) * exp(-exp(B) * (t)))^(1/exp(v))))
+#' A = left asymptote
+#' K = right asymptote (above r, to constrain to growth)
+#' Q = horizontal shift
+#' B = maximum rate of change
+#' v = asymptotic asymmetry
+#' This curve is symmetrical about the origin when A is negative, K = -2*A, and all other parameters are set to 1.
+#'
 #' @export
 #'
 #' @examples

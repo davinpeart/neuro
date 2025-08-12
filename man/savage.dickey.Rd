@@ -21,7 +21,7 @@ savage.dickey(
 
 \item{point.null}{The value of the point null hypothesis.}
 
-\item{plot}{Logical indicating whether to return a plot of the hypothesis. If F, returns a Bayes Factor in facour of the null.}
+\item{plot}{Logical indicating whether to return a plot of the hypothesis. If F, returns a Bayes Factor in favour of the null.}
 
 \item{gamma}{Resolution of sampling from the prior and posterior distributions for plotting.}
 

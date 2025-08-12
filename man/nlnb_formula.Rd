@@ -2,7 +2,7 @@
 % Please edit documentation in R/bayesian_functions.R
 \name{nlnb_formula}
 \alias{nlnb_formula}
-\title{Formulae for generalized non-linear regression}
+\title{Generate a formula for use in a negative binomial, poisson, or gamma regression function}
 \usage{
 nlnb_formula(dv, t, curve, t0)
 }
@@ -19,10 +19,35 @@ nlnb_formula(dv, t, curve, t0)
 \value{
 An object of class formula. See functions asymptotic_exponential(),
 double_exponential(), and generalized_logistic for more details on the non-linear parameters.
+
+When curve = "exp", returns the following formula:
+y ~ exp(L) - (exp(L) - exp(M)) * exp(-(t)/exp(o))
+L = intercept
+M = asymptote
+o = rate of change
+
+When curve = "double exp", returns the following formula:
+y ~ exp(C) - exp(D) * (exp(-(t)/exp(r)) - exp(-(t)/(exp(r) + exp(s))))
+C = intercept
+D = asymptote
+r = rate of change 1
+s = rate of change 2 (above r, to constrain to growth or shrinkage)
+
+When curve = "logistic", returns the following formula:
+y ~exp(A) + (exp(K)/((1 + exp(Q) * exp(-exp(B) * (t)))^(1/exp(v))))
+A = left asymptote
+K = right asymptote (above r, to constrain to growth)
+Q = horizontal shift
+B = maximum rate of change
+v = asymptotic asymmetry
+This curve is symmetrical about the origin when A is negative, K = -2*A, and all other parameters are set to 1.
 }
 \description{
 These formulae are parameterized such that the mean is constrained to non-negative reals.
 Each non-linear parameter will be modeled in logarithmic space.
+}
+\details{
+Formulae for generalized non-linear regression
 }
 \examples{
 x <- runif(n = 200, min = 0, max = 5)

@@ -7,13 +7,17 @@
 pp_stat_dens(
   yrep,
   y,
-  ynu1 = NULL,
-  ynu2 = NULL,
   nbin = 4,
   stat1 = mean,
   stat2 = sd,
-  fill_limits = c("#FEF8F9", "#FA819E"),
-  y_col = "teal"
+  fill = "yellow",
+  y_col = "red",
+  linetype = "dotted",
+  adjust = 1,
+  linewidth = 0.5,
+  stroke = 0.5,
+  ynu1 = NULL,
+  ynu2 = NULL
 )
 }
 \arguments{
@@ -21,19 +25,27 @@ pp_stat_dens(
 
 \item{y}{Vector of observed values.}
 
-\item{ynu1}{(Optional) Vector of previously observed values.}
-
-\item{ynu2}{(Optional) Vector of previously observed values.}
-
 \item{nbin}{Number of bins of density cutoffs.}
 
 \item{stat1}{Function to be performed on y and each draw of yrep.}
 
 \item{stat2}{Function to be performed on y and each draw of yrep.}
 
-\item{fill_limits}{Limits of the colour gradient mapped to the density of descriptives.}
+\item{fill}{Colour of the gradient mapped to the density of descriptives. See ?nature_palette or ?springer.}
 
-\item{y_col}{Colour of plotted values of y.}
+\item{y_col}{Colour of plotted values of y. See ?nature_palette or ?springer.}
+
+\item{linetype}{Linetype of the plot of y passed to geom_segment.}
+
+\item{adjust}{Bandwidth of the density boundaries passed to geom_density2d_filled.}
+
+\item{linewidth}{Linewidth of the plot of y passed to geom_segment.}
+
+\item{stroke}{Linewidth of the shape of y passed to geom_point.}
+
+\item{ynu1}{(Optional) Vector of previously observed values.}
+
+\item{ynu2}{(Optional) Vector of previously observed values.}
 }
 \value{
 A ggplot.
