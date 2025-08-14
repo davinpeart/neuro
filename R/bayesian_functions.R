@@ -34,7 +34,8 @@ pp_stat_dens <- function(yrep, y, nbin = 4, stat1 = mean, stat2 = sd,
 
   # check y_col is a single colour in nature palette
   ops <- c("background", "grey", "olive", "green", "teal",
-           "blue", "purple", "red", "orange", "yellow")
+           "blue", "purple", "red", "orange", "yellow", "peach", "pink",
+           "darkpurple", "navy")
   if(!(y_col %in% ops) | !(fill %in% ops) | length(y_col) != 1 | length(fill) != 1)
     stop(paste("y_col and fill must each be one of:",
                paste0(ops, collapse = ", ")

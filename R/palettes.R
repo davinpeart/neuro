@@ -48,7 +48,7 @@ nature_palette <- function(colour = NULL, n = NULL, gradn) {
                "#e06c24", "#af4d25", "#7f3218"),
     yellow = c("#fcedc0", "#f0d685", "#e3c24e",
                "#c59c2b", "#99752a", "#675221"),
-    peach - c("#FFEDCB", "#FFD990", "#FFC251",
+    peach = c("#FFEDCB", "#FFD990", "#FFC251",
               "#FFA600", "#C47F00", "#8F5D00"),
     pink = c("#FFE0E7", "#FFC0CD", "#FA92A7",
              "#EF5675", "#BE1F3F", "#82001A"),
@@ -57,7 +57,7 @@ nature_palette <- function(colour = NULL, n = NULL, gradn) {
     darkpurple = c("#EAE7FF", "#BDB7E9", "#776FAC",
                    "#58508D", "#382B8E", "#110465"),
     navy = c("#E4EDFD", "#9EB5DD", "#5777AE",
-             "#2F4B7C", "#092D6C", "#001C4E"),
+             "#2F4B7C", "#092D6C", "#001C4E")
   )
 
   if(!missing(gradn)) {
