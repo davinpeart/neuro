@@ -195,7 +195,7 @@ extract_expression_terms <- function(string) {
 #' fit <- brms::brm(b ~ 1 + a, data = data, sample_prior = "yes", save_pars = save_pars(all = TRUE))
 #' savage.dickey(brmsfit = fit, b_a)
 savage.dickey <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
-                          colour_scheme = "blue") {
+                          colour_scheme = "blue", lab) {
 
   # posterior
   code = paste0(deparse(substitute(...)), collapse = "")
@@ -289,6 +289,11 @@ savage.dickey <- function(brmsfit, ..., point.null = 0, plot = T, gamma = 1000,
                          parse = TRUE, colour = "black") +
       ggplot2::scale_x_continuous(expand = c(.04, .04)) +
       ggplot2::scale_y_continuous(expand = c(.02, .02))
+  }
+
+  if(!missing(lab)) {
+    graph <-
+      graph + ggplot2::labs(x = lab)
   }
 
   # return BF01
