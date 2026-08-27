@@ -1,0 +1,6 @@
+^LICENSE\.md$
+^README\.md$
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^\.DS_Store$
