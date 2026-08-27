@@ -10,8 +10,9 @@ savage.dickey(
   ...,
   point.null = 0,
   plot = T,
-  gamma = 1000,
-  colour_scheme = "blue"
+  gamma = 10000,
+  colour_scheme = "blue",
+  lab
 )
 }
 \arguments{

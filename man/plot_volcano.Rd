@@ -7,6 +7,8 @@
 plot_volcano(
   cor1,
   cor2,
+  n1,
+  n2,
   plab = 0.1,
   return = "graph",
   colours = c("#FA819E", "#5f83ea", "grey70")

@@ -227,15 +227,18 @@ colours5 <- function(colour = NULL) {
 }
 
 # five saturated colours
-#' Saturated colours
+#' Muted four-colour palette
 #'
-#' @param colour a string containing the desired colour. One of: "purple", "green", "blue", "yellow", or "red".
-#' NULL returns all colours.
+#' @param n Integer vector of indices in the range 1 to 4. Defaults to all four.
 #'
-#' @returns A character vector of hex codes
+#' @returns A character vector of hex codes, one per element of `n`.
 #' @export
+#'
+#' @examples
+#' seaborn()
+#' seaborn(2:3)
 seaborn <- function(n = 1:4) {
-  if(n > 4 | n < 1) {
+  if(any(n > 4 | n < 1)) {
     stop("n must be an integer in the range [1, 4]")
   }
   c("#A1D3C9", "#6AA1AE", "#4B6992", "#343763")[n]

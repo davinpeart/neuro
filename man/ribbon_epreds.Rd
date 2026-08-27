@@ -16,7 +16,8 @@ ribbon_epreds(
   points = T,
   hline = F,
   marginalize = F,
-  nrow = NULL
+  nrow = NULL,
+  cols = "navy"
 )
 }
 \arguments{

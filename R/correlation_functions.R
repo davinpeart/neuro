@@ -154,7 +154,7 @@ plot_cor_mat <- function(rmat, pmat, sepvars = NULL, show_legend = T, lwd = 0, m
 #' r2 <- runif(n = 1, min = -1, max = 1)
 #' fisher_r_to_z(r1 = r1, r2 = r2, n1 = 10, n2 = 10, return = "p")
 fisher_r_to_z <- function(r1, r2, n1, n2, return = "p") {
-  if(r1 == r2 & r1 == 1) {
+  if(r1 == r2 & abs(r1) == 1) {
     return(if(return == "p") 1 else if(return == "k") NA else if(return == "z") 0)
   }
   r <- c(r1, r2)
@@ -295,7 +295,7 @@ k_means_scree_plot <- function(matrix, max.k) {
     ggplot2::geom_line(colour = "black") +
     ggplot2::geom_point(shape = 21, fill = nature_palette("blue", 3), colour = nature_palette("blue", 5), size = 3) +
     ggplot2::scale_x_continuous(breaks = 1:max.k) +
-    ggplot2::scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) +
+    ggplot2::scale_y_continuous(limits = c(0, max(within.ss) * 1.05)) +
     ggplot2::labs(y = "Within-Cluster SS", x = "Number of Custers", title = "K-Means Elbow") +
     neuro::theme_nature()
   return(list(plot = plot, clusters = list.k))
